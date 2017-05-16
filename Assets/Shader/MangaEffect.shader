@@ -1,4 +1,6 @@
-﻿Shader "Brian/Manga"
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+Shader "Brian/Manga"
 {
 	Properties
 	{
@@ -8,9 +10,7 @@
 		_ThresholdOne ("Threshold One", float) = 1
 		_ThresholdTwo ("Threshold Two", float) = 2
 		_ThresholdThree ("Threshold Three", float) = 3
-		_ScreenWidth ("Screen Width", float) = 1024
-		_ScreenHeight ("Screen Height", float) = 768
-		_HalftoneSideLength ("Hafltone Side Length", float) = 40
+		_RepeatCount ("Hafltone Repeat Count", float) = 40
 	}
 	SubShader
 	{
@@ -42,21 +42,21 @@
 			sampler2D _CameraDepthNormalsTexture;
 			float4 _MainTex_TexelSize;
 			sampler2D _HalfToneOne;
+			float4 _HalfToneOne_TexelSize;
 			sampler2D _HalfToneTwo;
+			float4 _HalfToneTwo_TexelSize;
 			float _ThresholdOne;
 			float _ThresholdTwo;
 			float _ThresholdThree;
-			float _ScreenWidth;
-			float _ScreenHeight;
 			float _HalftoneSideLength;
+			float _RepeatCount;
 
 			v2f vert(appdata v)
 			{
 				v2f o;
-				o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
+				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.screenPosition = ComputeScreenPos(o.vertex);
 				float2 uv = v.uv;
-				uv.y = 1 - uv.y;
 				o.uv[0] = v.uv;
 				o.uv[1] = uv;
 				o.uv[2] = uv + float2(-_MainTex_TexelSize.x, -_MainTex_TexelSize.y);
@@ -84,14 +84,14 @@
 			fixed4 frag (v2f i) : SV_Target
 			{
 				half4 original = tex2D(_MainTex, i.uv[0]);
-
-				float uvX = modf((_ScreenWidth * i.screenPosition.x) / _HalftoneSideLength, _HalftoneSideLength);
-				float uvY = modf((_ScreenHeight * i.screenPosition.y) / _HalftoneSideLength, _HalftoneSideLength);
+				
+				float uvX = _ScreenParams.x * i.screenPosition.x;
+				float uvY = _ScreenParams.y * i.screenPosition.y;
 
 				float luminosity = original.r + original.g + original.b;
 				if (luminosity < _ThresholdOne) original = half4(0, 0, 0, 1);
-				else if (luminosity < _ThresholdTwo) original = tex2D(_HalfToneOne, float2(uvX, uvY));
-				else if (luminosity < _ThresholdThree) original = tex2D(_HalfToneTwo, float2(uvX, uvY));
+				else if (luminosity < _ThresholdTwo) original = tex2D(_HalfToneOne, float2(uvX * _HalfToneOne_TexelSize.x * _RepeatCount, uvY * _HalfToneOne_TexelSize.y * _RepeatCount));
+				else if (luminosity < _ThresholdThree) original = tex2D(_HalfToneTwo, float2(uvX * _HalfToneTwo_TexelSize.x * _RepeatCount, uvY * _HalfToneTwo_TexelSize.y * _RepeatCount));
 				else original = half4(1, 1, 1, 1);
 				//half4 original = half4(1, 1, 1, 1);
   
