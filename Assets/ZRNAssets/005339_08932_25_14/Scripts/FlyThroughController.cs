@@ -84,6 +84,11 @@ public class FlyThroughController : MonoBehaviour {
 				this.transform.localPosition = new Vector3 (this.transform.localPosition.x, groundCollider.transform.localPosition.y, this.transform.localPosition.z);
 			}
 		}
+
+    if (Input.GetKey(KeyCode.I))
+    {
+      transform.position += transform.forward * Time.deltaTime * 2f;
+    }
 		
 		// Move Forward
 		Vector3 forwardSpeed = transform.TransformDirection(Vector3.forward * Time.deltaTime * speed);

@@ -83,15 +83,21 @@ Shader "Brian/Manga"
 
 			fixed4 frag (v2f i) : SV_Target
 			{
-				half4 original = tex2D(_MainTex, i.uv[0]);
+				float4 original = tex2D(_MainTex, i.uv[0]);
 				
 				float uvX = _ScreenParams.x * i.screenPosition.x;
 				float uvY = _ScreenParams.y * i.screenPosition.y;
 
 				float luminosity = original.r + original.g + original.b;
-				if (luminosity < _ThresholdOne) original = half4(0, 0, 0, 1);
-				else if (luminosity < _ThresholdTwo) original = tex2D(_HalfToneOne, float2(uvX * _HalfToneOne_TexelSize.x * _RepeatCount, uvY * _HalfToneOne_TexelSize.y * _RepeatCount));
-				else if (luminosity < _ThresholdThree) original = tex2D(_HalfToneTwo, float2(uvX * _HalfToneTwo_TexelSize.x * _RepeatCount, uvY * _HalfToneTwo_TexelSize.y * _RepeatCount));
+
+				float4 black = float4(0, 0, 0, 1);
+				float4 halfOne = tex2D(_HalfToneOne, float2(uvX * _HalfToneOne_TexelSize.x * _RepeatCount, uvY * _HalfToneOne_TexelSize.y * _RepeatCount));
+				float4 halfTwo = tex2D(_HalfToneTwo, float2(uvX * _HalfToneTwo_TexelSize.x * _RepeatCount, uvY * _HalfToneTwo_TexelSize.y * _RepeatCount));
+				float4 white = float4(1, 1, 1, 1);
+
+				if (luminosity < _ThresholdOne) original = lerp(black, halfOne, luminosity / _ThresholdOne);
+				else if (luminosity < _ThresholdTwo) original = lerp(halfOne, halfTwo, (luminosity - _ThresholdOne) / (_ThresholdTwo - _ThresholdOne));
+				else if (luminosity < _ThresholdThree) original = lerp(halfTwo, white, (luminosity - _ThresholdTwo) / (_ThresholdThree - _ThresholdTwo));
 				else original = half4(1, 1, 1, 1);
 				//half4 original = half4(1, 1, 1, 1);
   
