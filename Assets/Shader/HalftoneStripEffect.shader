@@ -110,7 +110,7 @@ Shader "Brian/HalftoneStrip"
 
 				//Calculate color fragment at differing luminosity levels
 				float uvX = smoothstep(_LowThreshold, _HighThreshold, luminosity);
-				uvX = _ScreenParams.x * i.screenPosition.x * _HalfToneStrip_TexelSize.x * _RepeatCount;
+				//uvX = _ScreenParams.x * i.screenPosition.x * _HalfToneStrip_TexelSize.x * _RepeatCount;
 				float4 halfStrip = tex2D(_HalfToneStrip, float2(uvX, uvY * _HalfToneStrip_TexelSize.y * _RepeatCount));
 				//////////////////////////////////////////////////////////
 

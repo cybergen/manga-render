@@ -11,6 +11,9 @@ Shader "Brian/Manga"
 		_ThresholdTwo ("Threshold Two", float) = 2
 		_ThresholdThree ("Threshold Three", float) = 3
 		_RepeatCount ("Hafltone Repeat Count", float) = 40
+		_LowColor ("Low Color", Color) = (0, 0, 0, 1)
+		_HighColor ("High Color", Color) = (1, 1, 1, 1)
+		_TintColor ("Tint Color", Color) = (1, 1, 1, 1)
 	}
 	SubShader
 	{
@@ -50,6 +53,9 @@ Shader "Brian/Manga"
 			float _ThresholdThree;
 			float _HalftoneSideLength;
 			float _RepeatCount;
+			float4 _LowColor;
+			float4 _HighColor;
+			float4 _TintColor;
 
 			v2f vert(appdata v)
 			{
@@ -108,10 +114,10 @@ Shader "Brian/Manga"
 				float luminosity = original.r + original.g + original.b;
 
 				//Calculate color fragment at differing luminosity levels
-				float4 black = float4(0, 0, 0, 1);
+				float4 black = _LowColor;
 				float4 halfOne = tex2D(_HalfToneOne, float2(uvX * _HalfToneOne_TexelSize.x * _RepeatCount, uvY * _HalfToneOne_TexelSize.y * _RepeatCount));
 				float4 halfTwo = tex2D(_HalfToneTwo, float2(uvX * _HalfToneTwo_TexelSize.x * _RepeatCount, uvY * _HalfToneTwo_TexelSize.y * _RepeatCount));
-				float4 white = float4(1, 1, 1, 1);
+				float4 white = _HighColor;
 				//////////////////////////////////////////////////////////
 
 				if (luminosity < _ThresholdOne) 
@@ -121,9 +127,17 @@ Shader "Brian/Manga"
 					original += 1 - firstSampleDepth;
 					return original;
 				}
-				else if (luminosity < _ThresholdTwo) original = lerp(halfOne, halfTwo, (luminosity - _ThresholdOne) / (_ThresholdTwo - _ThresholdOne));
-				else if (luminosity < _ThresholdThree) original = lerp(halfTwo, white, (luminosity - _ThresholdTwo) / (_ThresholdThree - _ThresholdTwo));
-				else original = half4(1, 1, 1, 1);
+				else if (luminosity < _ThresholdTwo) 
+				{
+					original = lerp(halfOne, halfTwo, (luminosity - _ThresholdOne) / (_ThresholdTwo - _ThresholdOne));
+					original *= _TintColor;
+				}
+				else if (luminosity < _ThresholdThree) 
+				{
+					original = lerp(halfTwo, white, (luminosity - _ThresholdTwo) / (_ThresholdThree - _ThresholdTwo));
+					original *= _TintColor;
+				}
+				else original = white;
 				  				
 				original *= firstSampleDepth;
 				original *= secondSampleDepth;
