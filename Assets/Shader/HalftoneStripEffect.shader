@@ -1,16 +1,16 @@
 ﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 
-Shader "Brian/Manga"
+Shader "Brian/HalftoneStrip"
 {
 	Properties
 	{
 		_MainTex ("Texture", 2D) = "white" {}
-		_HalfToneOne ("Halftone One", 2D) = "white" {}
-		_HalfToneTwo ("Halftone Two", 2D) = "white" {}
-		_ThresholdOne ("Threshold One", float) = 1
-		_ThresholdTwo ("Threshold Two", float) = 2
-		_ThresholdThree ("Threshold Three", float) = 3
+		_HalfToneStrip ("Halftone Strip", 2D) = "white" {}
+		_LowThreshold ("Low Threshold", float) = 1
+		_HighThreshold ("High Threshold", float) = 2
 		_RepeatCount ("Hafltone Repeat Count", float) = 40
+		_LowColor ("Low Color", Color) = (0, 0, 0, 1)
+		_HighColor ("High Color", Color) = (1, 1, 1, 1)
 	}
 	SubShader
 	{
@@ -41,15 +41,16 @@ Shader "Brian/Manga"
 			sampler2D _MainTex;
 			sampler2D _CameraDepthNormalsTexture;
 			float4 _MainTex_TexelSize;
-			sampler2D _HalfToneOne;
-			float4 _HalfToneOne_TexelSize;
-			sampler2D _HalfToneTwo;
-			float4 _HalfToneTwo_TexelSize;
-			float _ThresholdOne;
-			float _ThresholdTwo;
-			float _ThresholdThree;
-			float _HalftoneSideLength;
+
+			sampler2D _HalfToneStrip;
+			float4 _HalfToneStrip_TexelSize;
+
+			float _LowThreshold;
+			float _HighThreshold;
 			float _RepeatCount;
+
+			float4 _LowColor;
+			float4 _HighColor;
 
 			v2f vert(appdata v)
 			{
@@ -86,7 +87,7 @@ Shader "Brian/Manga"
 				float4 original = tex2D(_MainTex, i.uv[0]);
 				
 				//Get adjusted screenspace uv/////////////////////////////
-				float uvX = _ScreenParams.x * i.screenPosition.x;
+				//float uvX = _ScreenParams.x * i.screenPosition.x;
 				float uvY = _ScreenParams.y * i.screenPosition.y;
 				//////////////////////////////////////////////////////////
 
@@ -108,25 +109,30 @@ Shader "Brian/Manga"
 				float luminosity = original.r + original.g + original.b;
 
 				//Calculate color fragment at differing luminosity levels
-				float4 black = float4(0, 0, 0, 1);
-				float4 halfOne = tex2D(_HalfToneOne, float2(uvX * _HalfToneOne_TexelSize.x * _RepeatCount, uvY * _HalfToneOne_TexelSize.y * _RepeatCount));
-				float4 halfTwo = tex2D(_HalfToneTwo, float2(uvX * _HalfToneTwo_TexelSize.x * _RepeatCount, uvY * _HalfToneTwo_TexelSize.y * _RepeatCount));
-				float4 white = float4(1, 1, 1, 1);
+				float uvX = smoothstep(_LowThreshold, _HighThreshold, luminosity);
+				uvX = _ScreenParams.x * i.screenPosition.x * _HalfToneStrip_TexelSize.x * _RepeatCount;
+				float4 halfStrip = tex2D(_HalfToneStrip, float2(uvX, uvY * _HalfToneStrip_TexelSize.y * _RepeatCount));
 				//////////////////////////////////////////////////////////
 
-				if (luminosity < _ThresholdOne) 
+				if (luminosity < _LowThreshold) 
 				{
-					original = black;
-					original += 1 - firstSampleDepth;
-					original += 1 - firstSampleDepth;
+					original = _LowColor;
+					if (firstSampleDepth < 1 || secondSampleDepth < 1)
+					{
+						original = _HighColor;
+					}
 					return original;
 				}
-				else if (luminosity < _ThresholdTwo) original = lerp(halfOne, halfTwo, (luminosity - _ThresholdOne) / (_ThresholdTwo - _ThresholdOne));
-				else if (luminosity < _ThresholdThree) original = lerp(halfTwo, white, (luminosity - _ThresholdTwo) / (_ThresholdThree - _ThresholdTwo));
-				else original = half4(1, 1, 1, 1);
-				  				
-				original *= firstSampleDepth;
-				original *= secondSampleDepth;
+				else if (luminosity < _HighThreshold)
+				{
+					original = halfStrip;
+				}				
+				else original = _HighColor;
+				  		
+				if (firstSampleDepth < 1 || secondSampleDepth < 1)
+				{
+					original = _LowColor;
+				}
 				    
 				return original;
 			}
