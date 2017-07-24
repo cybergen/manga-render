@@ -38,9 +38,9 @@ Shader "Brian/MangaTwo"
 
 			struct v2f
 			{
-				float2 uv[6] : TEXCOORD0;
+				float2 uv[4] : TEXCOORD0;
 				float4 vertex : SV_POSITION;
-				float4 screenPosition : TEXCOORD8;
+				float4 screenPosition : TEXCOORD5;
 			};
 			
 			sampler2D _MainTex;
@@ -72,8 +72,6 @@ Shader "Brian/MangaTwo"
 				o.uv[1] = uv;
 				o.uv[2] = uv + float2(-_MainTex_TexelSize.x, -_MainTex_TexelSize.y);
 				o.uv[3] = uv + float2(_MainTex_TexelSize.x, _MainTex_TexelSize.y);
-				o.uv[4] = uv + 2 * float2(-_MainTex_TexelSize.x, -_MainTex_TexelSize.y);
-				o.uv[5] = uv + 2 * float2(_MainTex_TexelSize.x, _MainTex_TexelSize.y);
 				return o;
 			}
 
@@ -94,7 +92,7 @@ Shader "Brian/MangaTwo"
 			  return isSameNormal * isSameDepth;
 			}
 
-			inline half CheckEdge(float2 xy, float2 uv[6])
+			inline half CheckEdge(float2 xy, float2 uv[4])
 			{
 				//Get adjusted screenspace uv/////////////////////////////
 				float uvX = _ScreenParams.x * xy.x;
@@ -105,8 +103,6 @@ Shader "Brian/MangaTwo"
   				half4 center = tex2D(_CameraDepthNormalsTexture, uv[1]);
 				half4 sample1 = tex2D(_CameraDepthNormalsTexture, uv[2]);
 				half4 sample2 = tex2D(_CameraDepthNormalsTexture, uv[3]);
-				half4 sample3 = tex2D(_CameraDepthNormalsTexture, uv[4]);
-				half4 sample4 = tex2D(_CameraDepthNormalsTexture, uv[5]);
 
 				// encoded normal
 				half2 centerNormal = center.xy;
@@ -114,14 +110,12 @@ Shader "Brian/MangaTwo"
 				float centerDepth = DecodeFloatRG(center.zw);
 
 				half firstSampleDepth = CheckSameNormalAndDepth(centerNormal, centerDepth, sample1);
-				firstSampleDepth *= CheckSameNormalAndDepth(centerNormal, centerDepth, sample2);
-				firstSampleDepth *= CheckSameNormalAndDepth(centerNormal, centerDepth, sample3);
-				return firstSampleDepth * CheckSameNormalAndDepth(centerNormal, centerDepth, sample4);
+				return firstSampleDepth * CheckSameNormalAndDepth(centerNormal, centerDepth, sample2);
 				//////////////////////////////////////////////////////////
 			}
 
 			//Returns 1 if edge, 0 if not
-			inline int CheckEdgeIterative(float2 startPosition, float2 uv[6])
+			inline int CheckEdgeIterative(float2 startPosition, float2 uv[4])
 			{
 				half current = CheckEdge(startPosition, uv);
 				current *= CheckEdge(startPosition, uv);
@@ -131,7 +125,7 @@ Shader "Brian/MangaTwo"
 
 			fixed4 frag (v2f i) : SV_Target
 			{
-				float4 original = tex2D(_MainTex, i.uv[0]);
+				float4 original = tex2D(_MainTex, i.uv[0]);				
 
 				//Get total luminosity
 				float luminosity = original.r + original.g + original.b;
