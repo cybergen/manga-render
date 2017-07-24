@@ -13,10 +13,10 @@ Shader "Brian/MangaThree"
 		_ThresholdThree ("Threshold Three", float) = 3
 		_ThresholdFour ("Threshold Three", float) = 3
 		_RepeatCount ("Hafltone Repeat Count", float) = 40
-		_LowColor ("Low Color", Color) = (0, 0, 0, 1)
-		_HighColor ("High Color", Color) = (1, 1, 1, 1)
-		_TintColor ("Tint Color", Color) = (1, 1, 1, 1)
-		_EdgeColor ("Edge Color", Color) = (1, 1, 1, 1)
+		_BlackReplace ("Black Replace", Color) = (0, 0, 0, 1)
+		_WhiteReplace ("White Replace", Color) = (1, 1, 1, 1)
+		_HalfToneBlackReplace ("Halftone Black Replace", Color) = (1, 1, 1, 1)
+		_HalfToneWhiteReplace ("Halftone White Replace", Color) = (1, 1, 1, 1)
 	}
 	SubShader
 	{
@@ -59,10 +59,10 @@ Shader "Brian/MangaThree"
 			float _ThresholdFour;
 			float _RepeatCount;
 
-			float4 _LowColor;
-			float4 _HighColor;
-			float4 _TintColor;
-			float4 _EdgeColor;
+			float4 _BlackReplace;
+			float4 _WhiteReplace;
+			float4 _HalfToneWhiteReplace;
+			float4 _HalfToneBlackReplace;
 
 			v2f vert(appdata v)
 			{
@@ -87,7 +87,7 @@ Shader "Brian/MangaThree"
 			  float sampleDepth = DecodeFloatRG(sample.zw);
 			  float zdiff = abs(centerDepth-sampleDepth);
 			  // scale the required threshold by the distance
-			  half isSameDepth = zdiff < 0.09 * centerDepth;
+			  half isSameDepth = zdiff < 0.2 * centerDepth;
 			  // return:
 			  // 1 - if normals and depth are similar enough to not need outline
 			  // 0 - otherwise
@@ -125,18 +125,18 @@ Shader "Brian/MangaThree"
 				//////////////////////////////////////////////////////////				
 
 				//Calculate color fragment at differing luminosity levels
-				float4 black = _LowColor;
+				float4 black = _BlackReplace;
 				float4 halfOne = tex2D(_HalfToneOne, float2(uvX * _HalfToneOne_TexelSize.x * _RepeatCount, uvY * _HalfToneOne_TexelSize.y * _RepeatCount));
 				float4 halfTwo = tex2D(_HalfToneTwo, float2(uvX * _HalfToneTwo_TexelSize.x * _RepeatCount, uvY * _HalfToneTwo_TexelSize.y * _RepeatCount));
 				float4 halfThree = tex2D(_HalfToneThree, float2(uvX * _HalfToneThree_TexelSize.x * _RepeatCount, uvY * _HalfToneThree_TexelSize.y * _RepeatCount));
-				float4 white = _HighColor;
+				float4 white = _WhiteReplace;
 				//////////////////////////////////////////////////////////
 
 				//Determine if we are an edge or if we are proximal to an edge
-				if (CheckEdge(float2(uvX, uvY), i.uv))
-				{
-					return _EdgeColor;
-				}
+				// if (CheckEdge(float2(uvX, uvY), i.uv))
+				// {
+				// 	return _EdgeColor;
+				// }
 				//////////////////////////////////////////////////////////
 
 
@@ -150,22 +150,24 @@ Shader "Brian/MangaThree"
 					else if (luminosity < _ThresholdTwo) 
 					{
 						original = halfOne;
-						original *= _TintColor;
-						return original;
 					}
 					else if (luminosity < _ThresholdThree) 
 					{
 						original = halfTwo;
-						original *= _TintColor;
 					}
 					else
 					{
-						original = halfThree * _TintColor;
+						original = halfThree;
 					}
 					if (original.r == 0)
 					{
-						original += _LowColor;
+						original += _HalfToneBlackReplace;
 					}
+					else
+					{
+						original *= _HalfToneWhiteReplace;
+					}
+					return original;
 				}
 				else original = white;
 				    
