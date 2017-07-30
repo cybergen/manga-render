@@ -1,25 +1,28 @@
 // Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 
-Shader "Brian/MangaThree"
+Shader "Brian/MangaFour"
 {
 	Properties
 	{
 		_MainTex ("Texture", 2D) = "white" {}
-		_HalfToneOne ("Halftone One", 2D) = "white" {}
-		_HalfToneTwo ("Halftone Two", 2D) = "white" {}
-		_HalfToneThree ("Halftone Two", 2D) = "white" {}
 		_ThresholdOne ("Threshold One", float) = 1
 		_ThresholdTwo ("Threshold Two", float) = 2
 		_ThresholdThree ("Threshold Three", float) = 3
 		_ThresholdFour ("Threshold Three", float) = 3
-		_RepeatCount ("Hafltone Repeat Count", float) = 40
 		_BlackReplace ("Black Replace", Color) = (0, 0, 0, 1)
 		_BlackCloseReplace ("Black Close Replace", Color) = (0, 0, 0, 1)
-		_WhiteReplace ("White Replace", Color) = (1, 1, 1, 1)
-		_HalfToneBlackReplace ("Halftone Black Replace", Color) = (1, 1, 1, 1)
-		_HalfToneWhiteReplace ("Halftone White Replace", Color) = (1, 1, 1, 1)
-		_EdgeColor ("Edge Color", Color) = (1, 1, 1, 1)
 		_BlackFadeEndDistance ("Black Fade End", float) = 1
+		_DarkReplace ("Dark Replace", Color) = (0, 0, 0, 1)
+		_DarkCloseReplace ("Dark Close Replace", Color) = (0, 0, 0, 1)
+		_DarkFadeEndDistance ("Dark Fade End", float) = 1
+		_MediumReplace ("Medium Replace", Color) = (0, 0, 0, 1)
+		_MediumCloseReplace ("Medium Close Replace", Color) = (0, 0, 0, 1)
+		_MediumFadeEndDistance ("Medium Fade End", float) = 1
+		_LightReplace ("Light Replace", Color) = (0, 0, 0, 1)
+		_LightCloseReplace ("Light Close Replace", Color) = (0, 0, 0, 1)
+		_LightFadeEndDistance ("Light Fade End", float) = 1
+		_WhiteReplace ("White Replace", Color) = (1, 1, 1, 1)
+		_EdgeColor ("Edge Color", Color) = (1, 1, 1, 1)
 
 	}
 	SubShader
@@ -51,24 +54,28 @@ Shader "Brian/MangaThree"
 			sampler2D _MainTex;
 			sampler2D _CameraDepthNormalsTexture;
 			float4 _MainTex_TexelSize;
-			sampler2D _HalfToneOne;
-			float4 _HalfToneOne_TexelSize;
-			sampler2D _HalfToneTwo;
-			float4 _HalfToneTwo_TexelSize;
-			sampler2D _HalfToneThree;
-			float4 _HalfToneThree_TexelSize;
 			float _ThresholdOne;
 			float _ThresholdTwo;
 			float _ThresholdThree;
 			float _ThresholdFour;
-			float _RepeatCount;
-			float _BlackFadeEndDistance;
 
 			float4 _BlackReplace;
 			float4 _BlackCloseReplace;
+			float _BlackFadeEndDistance;
+
+			float4 _DarkReplace;
+			float4 _DarkCloseReplace;
+			float _DarkFadeEndDistance;
+
+			float4 _MediumReplace;
+			float4 _MediumCloseReplace;
+			float _MediumFadeEndDistance;
+
+			float4 _LightReplace;
+			float4 _LightCloseReplace;
+			float _LightFadeEndDistance;
+
 			float4 _WhiteReplace;
-			float4 _HalfToneWhiteReplace;
-			float4 _HalfToneBlackReplace;
 			float4 _EdgeColor;
 
 			v2f vert(appdata v)
@@ -137,15 +144,15 @@ Shader "Brian/MangaThree"
 				float uvY = _ScreenParams.y * i.screenPosition.y;
 				//////////////////////////////////////////////////////////
 
-				//Get Center depth
+				//Get Center depth////////////////////////////////////////
 				half depth = GetDepth(float2(uvX, uvY), i.uv);
 				//////////////////////////////////////////////////////////
 
 				//Calculate color fragment at differing luminosity levels
 				float4 black = lerp(_BlackCloseReplace, _BlackReplace, depth / _BlackFadeEndDistance);
-				float4 halfOne = tex2D(_HalfToneOne, float2(uvX * _HalfToneOne_TexelSize.x * _RepeatCount, uvY * _HalfToneOne_TexelSize.y * _RepeatCount));
-				float4 halfTwo = tex2D(_HalfToneTwo, float2(uvX * _HalfToneTwo_TexelSize.x * _RepeatCount, uvY * _HalfToneTwo_TexelSize.y * _RepeatCount));
-				float4 halfThree = tex2D(_HalfToneThree, float2(uvX * _HalfToneThree_TexelSize.x * _RepeatCount, uvY * _HalfToneThree_TexelSize.y * _RepeatCount));
+				float4 halfOne = lerp(_DarkCloseReplace, _DarkReplace, depth / _DarkFadeEndDistance);
+				float4 halfTwo = lerp(_MediumCloseReplace, _MediumReplace, depth / _MediumFadeEndDistance);
+				float4 halfThree = lerp(_LightCloseReplace, _LightReplace, depth / _LightFadeEndDistance);
 				float4 white = _WhiteReplace;
 				//////////////////////////////////////////////////////////
 
@@ -155,40 +162,27 @@ Shader "Brian/MangaThree"
 				// 	return _EdgeColor;
 				// }
 				//////////////////////////////////////////////////////////
-
-
-				if (luminosity < _ThresholdFour)
-				{				
-					if (luminosity < _ThresholdOne) 
-					{
-						original = black;
-						return original;
-					}
-					else if (luminosity < _ThresholdTwo) 
-					{
-						original = halfOne;
-					}
-					else if (luminosity < _ThresholdThree) 
-					{
-						original = halfTwo;
-					}
-					else
-					{
-						original = halfThree;
-					}
-					if (original.r == 0)
-					{
-						original += _HalfToneBlackReplace;
-					}
-					else
-					{
-						original *= _HalfToneWhiteReplace;
-					}
-					return original;
+						
+				if (luminosity < _ThresholdOne) 
+				{
+					return black;
 				}
-				else original = white;
-				    
-				return original;
+				else if (luminosity < _ThresholdTwo) 
+				{
+					return halfOne;
+				}
+				else if (luminosity < _ThresholdThree) 
+				{
+					return halfTwo;
+				}
+				else if (luminosity < _ThresholdFour)
+				{
+					return halfThree;
+				}
+				else 
+				{
+					return white;
+				}
 			}
 			ENDCG
 		}
